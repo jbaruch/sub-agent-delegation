@@ -1,6 +1,6 @@
 {
   "name": "jbaruch/sub-agent-delegation",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "summary": "Meta-skill: how to pass skills/context to Claude sub-agents that start with fresh context, with documented SDK gotchas.",
   "private": false,
   "rules": {
