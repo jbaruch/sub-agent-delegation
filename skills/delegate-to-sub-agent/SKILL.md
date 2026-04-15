@@ -51,7 +51,7 @@ Every sub-agent's **first action** must be to echo back the skill names it recei
 The orchestrator verifies the echo matches the expected set. If it doesn't, fail
 loudly rather than letting the sub-agent operate with missing context.
 
-Minimal echo handler (inline in the sub-agent preamble or in `scripts/echo_skills.py`):
+Minimal echo handler (inline in the sub-agent preamble or in [`scripts/echo_skills.py`](../../scripts/echo_skills.py)):
 
 ```python
 import json, sys
