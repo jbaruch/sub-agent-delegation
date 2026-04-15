@@ -85,7 +85,7 @@ Skills are opt-in per sub-agent and will otherwise silently not apply.
   not a fork of the parent. → [GH #20492](https://github.com/anthropics/claude-code/issues/20492)
 
 For additional known issues (silent model switching, AskUserQuestion unavailability,
-billing routing, filesystem skill discovery), see `docs/SUB_AGENT_ISSUES.md`.
+billing routing, filesystem skill discovery), see [../../docs/SUB_AGENT_ISSUES.md](../../docs/SUB_AGENT_ISSUES.md).
 
 ## How to act
 
