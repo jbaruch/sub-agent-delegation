@@ -1,10 +1,10 @@
 # sub-agent-delegation
 
-A [Tessl](https://tessl.io) **meta-tile** for orchestrating Claude sub-agents
+A [Tessl](https://tessl.io) **meta-plugin** for orchestrating Claude sub-agents
 correctly: what inherits, what does not, how to pass skills explicitly, and how to
 validate the handoff.
 
-## What this tile provides
+## What this plugin provides
 
 | Kind | Name | Purpose |
 |---|---|---|
@@ -29,7 +29,7 @@ They do **not** inherit:
 - **Skills** (unless listed explicitly)
 
 That last one bites orchestrators who assume a sub-agent will see the same skills the
-parent can see. It won't. This tile encodes the explicit-passing pattern and a
+parent can see. It won't. This plugin encodes the explicit-passing pattern and a
 validation handshake that fails loudly if the handoff is wrong.
 
 ## Install
