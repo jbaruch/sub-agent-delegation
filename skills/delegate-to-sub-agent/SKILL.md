@@ -43,52 +43,52 @@ What they do NOT inherit:
    - Filesystem discovery of `.claude/skills/` technically works but is undocumented
      (GH #32910) — do not rely on it.
 
-## GitHub Copilot inheritance model
+## VS Code Copilot inheritance model
 
-Copilot's multi-agent architecture uses **participants** and **extensions** instead
-of sub-agents, but the context-loss problem is the same.
+Copilot in VS Code (agent mode) maintains conversation context within a single
+session — unlike Claude Code sub-agents which start fresh per spawn. But the
+context-loss problem still exists at the tool/subprocess boundary.
 
-What Copilot agents/participants DO inherit:
-- The VS Code workspace context (`@workspace`)
-- Files explicitly referenced via `#file`, `#selection`, `#editor` context variables
-- The participant's own registered system prompt
+What VS Code Copilot agent mode HAS in context:
+- `.github/copilot-instructions.md` (workspace-level, like `CLAUDE.md`)
+- VS Code settings custom instructions
+- Open editor content, `#file`, `#selection` references
+- Full conversation history within the session
 
-What they do NOT inherit:
-- Other participants' accumulated state
-- Skills/instructions from the parent conversation (unless re-injected)
-- `.github/copilot-instructions.md` is workspace-level (like `CLAUDE.md`) but
-  does NOT propagate into Copilot Extensions running as separate GitHub Apps
+What it LOSES when delegating:
+- When agent mode runs a **terminal command**, that process does NOT inherit
+  Copilot's conversation context — it's a bare subprocess.
+- When agent mode invokes a **chat participant** (`@workspace`, `@terminal`,
+  custom `@participant`), each participant has its own system prompt and gets
+  only the routed message + explicit context references, NOT the accumulated
+  conversation.
+- Scripts the agent WRITES that spawn their own sub-processes inherit nothing
+  from Copilot — same context-loss as Claude sub-agents.
 
-### Copilot channels
+### Copilot channels for passing skills
 
-1. **Copilot Extensions (GitHub Apps)**
-   - Each extension is a standalone agent with its own system prompt.
-   - Context arrives via the API request payload — NOT inherited from the user's
-     VS Code session.
-   - Pass skills by inlining them in the extension's system prompt or in the
-     user message routed to the extension.
+1. **`.github/copilot-instructions.md`** (workspace-level ground truth)
+   - Equivalent to `CLAUDE.md`. Every Copilot interaction in the workspace sees it.
+   - Put cross-cutting context here: device specs, API patterns, team conventions.
 
-2. **Copilot Chat Participants (VS Code API)**
-   - Register via `vscode.chat.createChatParticipant()`.
-   - Each participant gets the user's message + explicitly referenced context
-     (`#file`, `#selection`), NOT the full conversation history with other participants.
-   - Pass skills by referencing files (`#file:path/to/skill.md`) or by inlining
-     in the participant's `handleRequest` system prompt.
+2. **`#file` references in chat**
+   - `#file:.tessl/tiles/jbaruch/govee-h6056/skills/govee-h6056-control/SKILL.md`
+   - Injects the file content into the conversation context explicitly.
+   - The closest Copilot equivalent to Claude's `AgentDefinition(skills=[...])`.
 
-3. **Copilot Agent Mode (VS Code)**
-   - The agent maintains conversation context WITHIN a single session (unlike
-     Claude sub-agents which start fresh per spawn).
-   - BUT: when agent mode delegates to a tool or extension, that tool/extension
-     gets a fresh context — same problem as Claude.
+3. **Custom instructions in VS Code settings**
+   - `github.copilot.chat.codeGeneration.instructions` — persistent per-workspace.
+   - Good for always-on rules; less flexible than per-request `#file` references.
 
 ### Cross-platform ground truth
 
-| Concern | Claude Code | GitHub Copilot |
+| Concern | Claude Code | VS Code Copilot |
 |---|---|---|
 | Workspace-level shared context | `CLAUDE.md` | `.github/copilot-instructions.md` |
-| Per-agent skill passing | `AgentDefinition(skills=[...])` | inline in system prompt or `#file` references |
-| Conversation persistence | Sub-agents start FRESH | Agent mode persists, but extensions are fresh |
-| Validation handshake | Echo-skills protocol (below) | Same pattern works — add to system prompt |
+| Per-request skill injection | `AgentDefinition(skills=[...])` | `#file:path/to/SKILL.md` in chat |
+| Always-on rules | `CLAUDE.md` rules | `copilot-instructions.md` + VS Code settings |
+| Subprocess context | Sub-agents start FRESH | Terminal commands are bare processes |
+| Validation handshake | Echo-skills protocol (below) | Same pattern — add to instructions |
 
 ## Validation protocol
 

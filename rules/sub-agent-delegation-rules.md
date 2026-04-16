@@ -15,17 +15,17 @@
 - `context: fork` is INVERTED (GH #20492) — creates blank, not copy.
 - `AskUserQuestion` unavailable in sub-agents (GH #34592).
 
-## GitHub Copilot
+## VS Code Copilot
 
-- Inherit: workspace context (`@workspace`), `#file`/`#selection` references, participant's system prompt.
-- Pass skills: inline in extension system prompt or `#file:path/to/skill.md`.
-- Copilot Extensions (GitHub Apps) get FRESH context per request — same as Claude sub-agents.
-- Agent mode persists within session BUT delegates to tools/extensions with fresh context.
+- Agent mode persists within session BUT terminal commands and chat participants get fresh context.
+- Scripts the agent writes that spawn sub-processes inherit NOTHING from Copilot.
+- Pass skills: `#file:path/to/SKILL.md` in chat, or `.github/copilot-instructions.md` for always-on.
 
 ## Cross-platform ground truth
 
-| | Claude Code | Copilot |
+| | Claude Code | VS Code Copilot |
 |---|---|---|
 | Shared context | `CLAUDE.md` | `.github/copilot-instructions.md` |
-| Skill passing | `AgentDefinition(skills=[...])` | inline or `#file` refs |
+| Per-request skills | `AgentDefinition(skills=[...])` | `#file:path/to/SKILL.md` |
+| Subprocess context | Sub-agents start FRESH | Terminal commands are bare |
 | Handshake | echo-skills protocol | same pattern works |
