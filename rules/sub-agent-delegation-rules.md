@@ -1,19 +1,31 @@
 # Sub-Agent Delegation Rules
 
-When launching a Claude sub-agent:
+**Platform-agnostic.** The context-loss problem is the same on Claude Code and Copilot.
 
-- **Sub-agents start with FRESH context.** They do NOT inherit:
-  - parent's conversation history
-  - parent's system prompt
-  - parent's accumulated state
-  - **skills** (unless listed explicitly)
-- They DO inherit: `CLAUDE.md`, tool definitions, MCP servers.
-- **Pass skills explicitly:**
-  - Agent SDK → `AgentDefinition(skills=[...])`
-  - Task tool → inline the skill body in the prompt string.
-- **Validate the handoff.** First sub-agent action: echo the skills it received. Fail loudly on mismatch.
-- **Cross-cutting ground truth → `CLAUDE.md`.** Everything else is opt-in.
+## The universal rule
 
-Known gotchas: `context: fork` is inverted (GH #20492), `AskUserQuestion` unavailable in sub-agents (GH #34592), model default silent switch (GH #5456), filesystem skill discovery undocumented (GH #32910), parent-context inheritance still open (GH #12790), silent billing routing (GH #39903).
+- **Sub-agents / extensions / participants start with FRESH context.** They do NOT inherit parent's skills, history, or accumulated state.
+- **Pass skills explicitly** — every platform, every time.
+- **Validate the handoff.** First sub-agent action: echo received skills. Fail loudly on mismatch.
 
-Reference: `skills/delegate-to-sub-agent/SKILL.md` and `scripts/echo_skills.py`.
+## Claude Code
+
+- Inherit: `CLAUDE.md`, tool definitions, MCP servers.
+- Pass skills: `AgentDefinition(skills=[...])` or inline in Task tool prompt.
+- `context: fork` is INVERTED (GH #20492) — creates blank, not copy.
+- `AskUserQuestion` unavailable in sub-agents (GH #34592).
+
+## GitHub Copilot
+
+- Inherit: workspace context (`@workspace`), `#file`/`#selection` references, participant's system prompt.
+- Pass skills: inline in extension system prompt or `#file:path/to/skill.md`.
+- Copilot Extensions (GitHub Apps) get FRESH context per request — same as Claude sub-agents.
+- Agent mode persists within session BUT delegates to tools/extensions with fresh context.
+
+## Cross-platform ground truth
+
+| | Claude Code | Copilot |
+|---|---|---|
+| Shared context | `CLAUDE.md` | `.github/copilot-instructions.md` |
+| Skill passing | `AgentDefinition(skills=[...])` | inline or `#file` refs |
+| Handshake | echo-skills protocol | same pattern works |

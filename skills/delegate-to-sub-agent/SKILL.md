@@ -1,25 +1,32 @@
 ---
 name: delegate-to-sub-agent
-description: Orchestrate Claude sub-agents correctly. Use when spawning child agents, delegating tasks to another agent, building multi-agent pipelines, or troubleshooting why a sub-agent doesn't have access to expected skills or context. Covers what inherits (CLAUDE.md, tools, MCP) vs what doesn't (skills, history, system prompt, state), how to pass skills explicitly via AgentDefinition or inline prompt, and how to validate the handoff with a skills-echo protocol.
+description: Orchestrate sub-agents across Claude Code AND GitHub Copilot. Covers what inherits vs what doesn't on each platform, how to pass skills explicitly, and the echo-skills validation handshake. Use when spawning child agents, delegating tasks, building multi-agent pipelines, or troubleshooting why a sub-agent doesn't have access to expected skills or context.
 ---
 
 # Sub-Agent Delegation
 
-Sub-agents do **not** inherit the orchestrator's skills, history, or accumulated state.
-They start with a blank slate. The only inheritance you can rely on is:
+Sub-agents do **not** inherit the orchestrator's skills, history, or accumulated state
+on ANY platform. They start with a blank slate. The core problem is the same whether
+you're on Claude Code or GitHub Copilot: **delegation is a context-loss event unless
+you explicitly propagate what the sub-agent needs.**
 
+## Claude Code inheritance model
+
+What Claude sub-agents DO inherit:
 - `CLAUDE.md` content
 - Tool definitions (all, unless you restrict them)
 - MCP servers (all — there is no per-sub-agent scoping today)
 
-Everything else — including skills under `.claude/skills/` — is **opt-in** per sub-agent
-and must be passed explicitly.
+What they do NOT inherit:
+- Skills (unless explicitly listed in `AgentDefinition`)
+- Parent conversation history
+- Parent system prompt
+- Accumulated state
 
-## The two channels
+### Claude Code channels
 
 1. **Agent SDK (`AgentDefinition`)**
    - Pass skills by name: `AgentDefinition(skills=["govee-h6056", "face-recognition-calibration"])`
-   - Preferred when you control the launcher.
    - Complete example:
      ```python
      agent = AgentDefinition(
@@ -31,19 +38,57 @@ and must be passed explicitly.
      ```
 
 2. **Claude Code Task tool**
-   - You cannot attach a skills list to the tool call.
+   - Cannot attach a skills list to the tool call.
    - Inline the skill content directly in the prompt string.
    - Filesystem discovery of `.claude/skills/` technically works but is undocumented
-     (GH #32910) and should not be relied on.
-   - Inline example:
-     ```
-     <skill name="govee-h6056">
-     # Govee H6056 skill content here …
-     </skill>
+     (GH #32910) — do not rely on it.
 
-     Your task is: adjust the living-room lights to 50 % brightness.
-     First, echo back the skill names you received.
-     ```
+## GitHub Copilot inheritance model
+
+Copilot's multi-agent architecture uses **participants** and **extensions** instead
+of sub-agents, but the context-loss problem is the same.
+
+What Copilot agents/participants DO inherit:
+- The VS Code workspace context (`@workspace`)
+- Files explicitly referenced via `#file`, `#selection`, `#editor` context variables
+- The participant's own registered system prompt
+
+What they do NOT inherit:
+- Other participants' accumulated state
+- Skills/instructions from the parent conversation (unless re-injected)
+- `.github/copilot-instructions.md` is workspace-level (like `CLAUDE.md`) but
+  does NOT propagate into Copilot Extensions running as separate GitHub Apps
+
+### Copilot channels
+
+1. **Copilot Extensions (GitHub Apps)**
+   - Each extension is a standalone agent with its own system prompt.
+   - Context arrives via the API request payload — NOT inherited from the user's
+     VS Code session.
+   - Pass skills by inlining them in the extension's system prompt or in the
+     user message routed to the extension.
+
+2. **Copilot Chat Participants (VS Code API)**
+   - Register via `vscode.chat.createChatParticipant()`.
+   - Each participant gets the user's message + explicitly referenced context
+     (`#file`, `#selection`), NOT the full conversation history with other participants.
+   - Pass skills by referencing files (`#file:path/to/skill.md`) or by inlining
+     in the participant's `handleRequest` system prompt.
+
+3. **Copilot Agent Mode (VS Code)**
+   - The agent maintains conversation context WITHIN a single session (unlike
+     Claude sub-agents which start fresh per spawn).
+   - BUT: when agent mode delegates to a tool or extension, that tool/extension
+     gets a fresh context — same problem as Claude.
+
+### Cross-platform ground truth
+
+| Concern | Claude Code | GitHub Copilot |
+|---|---|---|
+| Workspace-level shared context | `CLAUDE.md` | `.github/copilot-instructions.md` |
+| Per-agent skill passing | `AgentDefinition(skills=[...])` | inline in system prompt or `#file` references |
+| Conversation persistence | Sub-agents start FRESH | Agent mode persists, but extensions are fresh |
+| Validation handshake | Echo-skills protocol (below) | Same pattern works — add to system prompt |
 
 ## Validation protocol
 
