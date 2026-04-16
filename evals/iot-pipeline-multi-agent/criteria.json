@@ -1,0 +1,46 @@
+{
+  "context": "Tests whether the agent knows plugin-specific gotchas: skills must be passed EXPLICITLY (they don't inherit), the echo-skills validation handshake protocol, failing loudly on skill mismatch, and AskUserQuestion unavailability in sub-agents.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Skills via AgentDefinition",
+      "max_score": 16,
+      "description": "Uses AgentDefinition(skills=[...]) to pass skills to the sub-agent — does NOT rely on skills being implicitly available or inherited from the parent agent"
+    },
+    {
+      "name": "Echo preamble in prompt",
+      "max_score": 16,
+      "description": "Constructs the sub-agent prompt with a preamble that instructs the sub-agent to echo skill names before doing anything else (the echo-skills validation handshake)"
+    },
+    {
+      "name": "SKILLS_ECHO JSON format",
+      "max_score": 14,
+      "description": "Sub-agent's first output uses the specific skills_echo protocol — a JSON line with key 'skills_echo' listing the received skills, e.g. {\"skills_echo\": [\"read_sensor\", \"write_config\"]}"
+    },
+    {
+      "name": "Orchestrator validates echo",
+      "max_score": 16,
+      "description": "After launching the sub-agent, the orchestrator parses the first response and checks whether the echoed skills match the expected set"
+    },
+    {
+      "name": "Fail loudly on mismatch",
+      "max_score": 16,
+      "description": "On echo mismatch the code raises RuntimeError or aborts with an error (does NOT silently continue with the task)"
+    },
+    {
+      "name": "No implicit skill assumption",
+      "max_score": 10,
+      "description": "Code does NOT assume sub-agent has access to skills that were not explicitly passed — treats skill inheritance as non-existent"
+    },
+    {
+      "name": "Missing/extra skills reported",
+      "max_score": 6,
+      "description": "The mismatch error message identifies which skills are missing and which are extra/unexpected"
+    },
+    {
+      "name": "No AskUserQuestion in sub-agent",
+      "max_score": 6,
+      "description": "Sub-agent design does NOT include calls to AskUserQuestion — this tool is unavailable in sub-agents (GH #34592)"
+    }
+  ]
+}

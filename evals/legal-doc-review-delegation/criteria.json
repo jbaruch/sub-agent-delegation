@@ -1,0 +1,46 @@
+{
+  "context": "Tests whether the agent knows plugin-specific gotchas: skills must be inlined explicitly in the Task tool prompt (no filesystem auto-discovery), the echo-skills validation handshake with specific JSON protocol, failing loudly on mismatch, and AskUserQuestion unavailability.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Skill inlined in prompt",
+      "max_score": 18,
+      "description": "The Task tool prompt string contains the full skill content embedded inline — not a file path reference or assumption that the skill file will be auto-discovered from .claude/skills/"
+    },
+    {
+      "name": "No filesystem discovery reliance",
+      "max_score": 12,
+      "description": "The code does NOT rely on .claude/skills/ filesystem discovery as the mechanism for passing skills to the sub-agent — skills are explicitly included in the prompt"
+    },
+    {
+      "name": "Echo preamble present",
+      "max_score": 16,
+      "description": "The Task tool prompt includes a preamble that instructs the sub-agent to echo back its skill names as the very first action (echo-skills validation handshake)"
+    },
+    {
+      "name": "SKILLS_ECHO JSON format",
+      "max_score": 12,
+      "description": "Sub-agent's first output uses the specific skills_echo protocol — a JSON line with key 'skills_echo' listing the received skills, e.g. {\"skills_echo\": [\"review_clause\", \"flag_risk\"]}"
+    },
+    {
+      "name": "Fail loudly on mismatch",
+      "max_score": 14,
+      "description": "When skills are missing, the sub-agent signals 'MISSING SKILLS' and stops — by raising RuntimeError('MISSING SKILLS') or printing a 'MISSING SKILLS' message and aborting rather than continuing silently"
+    },
+    {
+      "name": "Orchestrator parses echo",
+      "max_score": 12,
+      "description": "After the Task tool returns, the orchestrator code parses the skills_echo JSON from the sub-agent's first message and verifies the skill set"
+    },
+    {
+      "name": "Skills not implicitly assumed",
+      "max_score": 8,
+      "description": "No comment or code assumes that skills are available to the sub-agent by any means other than explicit inline inclusion in the prompt"
+    },
+    {
+      "name": "No AskUserQuestion in sub-agent",
+      "max_score": 8,
+      "description": "Sub-agent prompt does NOT instruct or allow the sub-agent to ask clarifying questions — AskUserQuestion is unavailable in sub-agents (GH #34592)"
+    }
+  ]
+}

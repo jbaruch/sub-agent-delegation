@@ -1,0 +1,36 @@
+{
+  "context": "Tests whether the agent knows plugin-specific gotchas: CLAUDE.md as the ONLY cross-agent ground truth channel, context:fork creates ISOLATED blank context (inverted semantics — GH #20492), skills must be passed explicitly, echo-skills validation handshake, and AskUserQuestion unavailability.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "CLAUDE.md as ground truth channel",
+      "max_score": 20,
+      "description": "Configuration or context that must be available to all sub-agents is placed in CLAUDE.md — recognized as the ONLY cross-agent ground truth channel (not passed ad-hoc or assumed to be inherited)"
+    },
+    {
+      "name": "No context:fork misuse",
+      "max_score": 20,
+      "description": "Code does NOT use context:'fork' expecting it to copy parent context — OR if context:fork appears, a comment explicitly notes its inverted semantics: fork creates ISOLATED blank context, not a copy (GH #20492)"
+    },
+    {
+      "name": "Skills passed explicitly per sub-agent",
+      "max_score": 16,
+      "description": "Each sub-agent that needs skills has them passed explicitly (via AgentDefinition(skills=[...]) or inlined in prompt) rather than relying on implicit inheritance"
+    },
+    {
+      "name": "No AskUserQuestion in sub-agents",
+      "max_score": 14,
+      "description": "Sub-agent prompts or designs do NOT include instructions or code that would cause the sub-agent to call AskUserQuestion — this tool is unavailable in sub-agents (GH #34592)"
+    },
+    {
+      "name": "Echo validation present",
+      "max_score": 16,
+      "description": "At least one sub-agent has an echo-skills validation step (skills_echo JSON handshake) to confirm the skills handoff succeeded"
+    },
+    {
+      "name": "Cross-cutting vs per-agent distinction",
+      "max_score": 14,
+      "description": "The solution distinguishes between context that goes in CLAUDE.md (cross-cutting ground truth) and context passed per sub-agent (skill-specific) — does not conflate the two channels"
+    }
+  ]
+}
